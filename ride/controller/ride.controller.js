@@ -1,5 +1,5 @@
 const rideModel = require('../models/ride.model');
-const { subscribeToQueue, publishToQueue } = require('../service/rabbit')
+const { publishToQueue } = require('../service/rabbit')
 
 module.exports.createRide = async (req, res, next) => {
 
@@ -16,6 +16,8 @@ module.exports.createRide = async (req, res, next) => {
 
 
     await newRide.save();
+    // Tell RabbitMQ that a new ride has been created
+    // Always use JSON.stringify to convert the object to a string before sending it to RabbitMQ
     publishToQueue("new-ride", JSON.stringify(newRide))
     res.send(newRide);
 

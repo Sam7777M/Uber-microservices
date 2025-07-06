@@ -20,9 +20,9 @@ module.exports.register = async (req, res) => {
 
         await newUser.save();
 
-        const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
-        res.cookie('token', token);
+        res.cookie('user_token', token);
 
         delete newUser._doc.password;
 
@@ -50,11 +50,11 @@ module.exports.login = async (req, res) => {
         }
 
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
         delete user._doc.password;
 
-        res.cookie('token', token);
+        res.cookie('user_token', token);
 
         res.send({ token, user });
 
@@ -67,7 +67,7 @@ module.exports.login = async (req, res) => {
 
 module.exports.logout = async (req, res) => {
     try {
-        const token = req.cookies.token;
+        const token = req.cookies.user_token;
         await blacklisttokenModel.create({ token });
         res.clearCookie('token');
         res.send({ message: 'User logged out successfully' });
@@ -85,16 +85,21 @@ module.exports.profile = async (req, res) => {
 }
 
 module.exports.acceptedRide = async (req, res) => {
-    // Long polling: wait for 'ride-accepted' event
-    rideEventEmitter.once('ride-accepted', (data) => {
-        res.send(data);
-    });
-
     // Set timeout for long polling (e.g., 30 seconds)
-    setTimeout(() => {
-        res.status(204).send();
+    const timeout = setTimeout(() => {
+        if (!res.headersSent) {
+            res.status(204).send(); // No content
+        }
     }, 30000);
-}
+
+    // Wait for 'ride-accepted' event
+    rideEventEmitter.once('ride-accepted', (data) => {
+        clearTimeout(timeout); // Prevent timeout response
+        if (!res.headersSent) {
+            res.send(data);
+        }
+    });
+};
 
 subscribeToQueue('ride-accepted', async (msg) => {
     const data = JSON.parse(msg);
