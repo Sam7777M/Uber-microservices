@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { subscribeToQueue } = require('../service/rabbit')
 
-const pendingRequests = [];
+const pendingRequestsfromDifferentCaptains = [];
 
 module.exports.register = async (req, res) => {
     try {
@@ -20,7 +20,7 @@ module.exports.register = async (req, res) => {
 
         await newcaptain.save();
 
-        const token = jwt.sign({ id: newcaptain._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: newcaptain._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
         res.cookie('captain_token', token);
 
@@ -50,7 +50,7 @@ module.exports.login = async (req, res) => {
         }
 
 
-        const token = jwt.sign({ id: captain._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: captain._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
         delete captain._doc.password;
 
@@ -103,18 +103,17 @@ module.exports.waitForNewRide = async (req, res) => {
         res.status(204).end(); // No Content
     });
 
-    // Add the response object to the pendingRequests array
-    pendingRequests.push(res);
+    // Add the response object to the pendingRequestsfromDifferentCaptains array
+    pendingRequestsfromDifferentCaptains.push(res);
 };
 
 subscribeToQueue("new-ride", (data) => {
     const rideData = JSON.parse(data);
-
     // Send the new ride data to all pending requests
-    pendingRequests.forEach(res => {
+    pendingRequestsfromDifferentCaptains.forEach(res => {
         res.json(rideData);
     });
-
+    
     // Clear the pending requests
-    pendingRequests.length = 0;
+    pendingRequestsfromDifferentCaptains.length = 0;
 });

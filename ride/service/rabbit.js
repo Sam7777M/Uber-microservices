@@ -10,9 +10,11 @@ async function connect() {
 
     connection = await amqp.connect(RABBITMQ_URL);
     channel = await connection.createChannel();
-    console.log('Connected to RabbitMQ');
+    console.log('Connected to RabbitMQ Ride Service');
 }
 
+// queueName => event name
+// callback => function to execute when a message is received
 async function subscribeToQueue(queueName, callback) {
     if (!channel) await connect();
     await channel.assertQueue(queueName);
