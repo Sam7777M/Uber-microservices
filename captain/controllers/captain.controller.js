@@ -22,7 +22,7 @@ module.exports.register = async (req, res) => {
 
         const token = jwt.sign({ id: newcaptain._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.cookie('token', token);
+        res.cookie('captain_token', token);
 
         delete newcaptain._doc.password;
 
@@ -54,7 +54,7 @@ module.exports.login = async (req, res) => {
 
         delete captain._doc.password;
 
-        res.cookie('token', token);
+        res.cookie('captain_token', token);
 
         res.send({ token, captain });
 
@@ -67,7 +67,7 @@ module.exports.login = async (req, res) => {
 
 module.exports.logout = async (req, res) => {
     try {
-        const token = req.cookies.token;
+        const token = req.cookies.captain_token;
         await blacklisttokenModel.create({ token });
         res.clearCookie('token');
         res.send({ message: 'captain logged out successfully' });
